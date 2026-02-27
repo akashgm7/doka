@@ -1,0 +1,145 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@theme {
+  --color-primary: #FCFBF7;
+  --color-secondary: #FFFFFF;
+  --color-accent: #C5A028;
+  --color-accent-light: #D4AF37;
+  --color-accent-dark: #967B1B;
+  --color-surface: #F8F7F2;
+  --color-surface-2: #F0EEE4;
+  --color-rose: #e8506a;
+  --color-text-main: #1A1A10;
+  --color-text-muted: #706F6C;
+
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+/* Custom Utilities */
+@utility text-shadow {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@utility text-glow {
+  text-shadow: 0 0 20px rgba(197, 160, 40, 0.3);
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility custom-scrollbar {
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(197, 160, 40, 0.2);
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(197, 160, 40, 0.4);
+  }
+}
+
+@utility glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(197, 160, 40, 0.1);
+}
+
+@utility glass-dark {
+  background: rgba(252, 251, 247, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(197, 160, 40, 0.2);
+}
+
+/* Global Styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #FCFBF7;
+  color: #1A1A10;
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(197, 160, 40, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 90%, rgba(197, 160, 40, 0.05) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-serif);
+}
+
+/* Selection */
+::selection {
+  background: rgba(197, 160, 40, 0.15);
+  color: #1A1A10;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FCFBF7;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(197, 160, 40, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(197, 160, 40, 0.5);
+}
+
+/* Smooth transitions */
+a,
+button {
+  transition: all 0.2s ease;
+}
