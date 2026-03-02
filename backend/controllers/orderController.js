@@ -75,7 +75,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
             isPaid: true,
             paidAt: Date.now(),
             paymentStatus: 'Paid',
-            status: 'Pending',
+            status: 'PENDING',
             brandId: 'brand-001',
             isMMC,
             earnedLoyaltyPoints: points,
@@ -145,6 +145,35 @@ const getMyOrders = asyncHandler(async (req, res) => {
     res.json(orders);
 });
 
+// @desc    Update order status
+// @route   PUT /api/orders/:id/status
+// @access  Private
+const updateOrderStatus = asyncHandler(async (req, res) => {
+    const { status } = req.body;
+    const order = await Order.findById(req.params.id);
+
+    if (order) {
+        order.status = status;
+        const updatedOrder = await order.save();
+
+        // Emit socket event for real-time tracking
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('orderStatusUpdated', {
+                orderId: order._id,
+                orderNumber: order.orderId,
+                status: status
+            });
+            console.log(`[SOCKET] Emitted orderStatusUpdated for ${order._id}: ${status}`);
+        }
+
+        res.json(updatedOrder);
+    } else {
+        res.status(404);
+        throw new Error('Order not found');
+    }
+});
+
 // @desc    Update order to delivered
 // @route   PUT /api/orders/:id/deliver
 // @access  Private
@@ -158,6 +187,18 @@ const updateOrderToDelivered = asyncHandler(async (req, res) => {
         order.status = 'Delivered';
 
         const updatedOrder = await order.save();
+
+        // Emit socket event for real-time tracking
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('orderStatusUpdated', {
+                orderId: order._id,
+                orderNumber: order.orderId,
+                status: 'Delivered'
+            });
+            console.log(`[SOCKET] Emitted orderStatusUpdated for ${order._id}: Delivered`);
+        }
+
         res.json(updatedOrder);
     } else {
         res.status(404);
@@ -170,4 +211,5 @@ module.exports = {
     getOrderById,
     getMyOrders,
     updateOrderToDelivered,
+    updateOrderStatus,
 };

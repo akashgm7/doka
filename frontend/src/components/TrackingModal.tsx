@@ -1,8 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, ChefHat, Truck, Home, Package } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import api from '../services/api';
+import { io } from 'socket.io-client';
 
 interface TrackingModalProps {
     order: any;
@@ -10,73 +10,54 @@ interface TrackingModalProps {
     onDelivered?: () => void;
 }
 
-const TrackingModal = ({ order, onClose, onDelivered }: TrackingModalProps) => {
+const TrackingModal = ({ order: initialOrder, onClose, onDelivered }: TrackingModalProps) => {
+    const [order, setOrder] = useState(initialOrder);
     const [currentStep, setCurrentStep] = useState(0);
-    const [deliveryMarked, setDeliveryMarked] = useState(false);
-    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const steps = [
-        { icon: Package, label: 'Order Confirmed', time: 'Just now' },
-        { icon: ChefHat, label: 'Baking in Progress', time: '~15 mins' },
-        { icon: Check, label: 'Quality Check', time: '~30 mins' },
-        { icon: Truck, label: 'Out for Delivery', time: '~45 mins' },
-        { icon: Home, label: 'Delivered', time: '~60 mins' },
+        { icon: Package, label: 'Order Confirmed', time: 'Just now', statuses: ['PENDING', 'CONFIRMED'] },
+        { icon: ChefHat, label: 'Baking in Progress', time: '~15 mins', statuses: ['IN_PRODUCTION'] },
+        { icon: Check, label: 'Quality Check', time: '~30 mins', statuses: ['READY'] },
+        { icon: Truck, label: 'Out for Delivery', time: '~45 mins', statuses: ['OUT_FOR_DELIVERY'] },
+        { icon: Home, label: 'Delivered', time: '~60 mins', statuses: ['DELIVERED'] },
     ];
 
-    const totalSteps = steps.length; // 5
-
-    // Mark as delivered in the database
-    const markDelivered = async () => {
-        if (deliveryMarked) return;
-        setDeliveryMarked(true);
-        try {
-            console.log('[TrackingModal] Calling PUT /api/orders/' + order._id + '/deliver');
-            const res = await api.put('/api/orders/' + order._id + '/deliver');
-            console.log('[TrackingModal] Success! DB updated:', res.data?.status, res.data?.isDelivered);
-            // Auto-close and refresh after 2 seconds
-            setTimeout(() => {
-                if (onDelivered) {
-                    onDelivered();
-                }
-            }, 2000);
-        } catch (err: any) {
-            console.error('[TrackingModal] API Error:', err?.response?.status, err?.response?.data, err?.message);
-        }
+    const getStepIdx = (status: string) => {
+        const idx = steps.findIndex(s => s.statuses.includes(status));
+        return idx === -1 ? 0 : idx;
     };
 
-    useEffect(() => {
-        // If already delivered, jump to end immediately
-        if (order.status === 'Delivered' || order.isDelivered) {
-            if (currentStep !== totalSteps - 1) {
-                setCurrentStep(totalSteps - 1);
-            }
-            setDeliveryMarked(true); // don't re-send
-            return;
-        }
+    const totalSteps = steps.length;
 
-        // Simulate progression: advance one step every 5 seconds
-        intervalRef.current = setInterval(() => {
-            setCurrentStep(prev => {
-                const next = prev + 1;
-                if (next >= totalSteps) {
-                    if (intervalRef.current) clearInterval(intervalRef.current);
-                    return totalSteps - 1;
+    useEffect(() => {
+        // Initial sync
+        setCurrentStep(getStepIdx(order.status));
+
+        // Connect to Admin backend (port 5002) for real-time status updates
+        const socket = io(`http://${window.location.hostname}:5002`);
+
+        socket.on('connect', () => {
+            console.log('[Tracking] Connected to status server on port 5002');
+        });
+
+        socket.on('orderStatusUpdated', (data) => {
+            console.log('[Tracking] New status received:', data.status);
+            // Verify if the event matches the current order
+            if (data.orderId === order._id || data.orderNumber === order.orderId) {
+                const nextStep = getStepIdx(data.status);
+                setCurrentStep(nextStep);
+                setOrder((prev: any) => ({ ...prev, status: data.status }));
+
+                if (data.status === 'DELIVERED' && onDelivered) {
+                    setTimeout(onDelivered, 2000);
                 }
-                return next;
-            });
-        }, 5000);
+            }
+        });
 
         return () => {
-            if (intervalRef.current) clearInterval(intervalRef.current);
+            socket.disconnect();
         };
-    }, [order, totalSteps, currentStep]);
-
-    // When the last step is reached, update the DB
-    useEffect(() => {
-        if (currentStep === totalSteps - 1 && !deliveryMarked && !(order.status === 'Delivered' || order.isDelivered)) {
-            markDelivered();
-        }
-    }, [currentStep, totalSteps, deliveryMarked, order.status, order.isDelivered]);
+    }, [order._id, order.orderId]);
 
     return createPortal(
         <AnimatePresence>

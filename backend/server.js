@@ -17,6 +17,16 @@ console.log('🔧 ENV Check — PORT:', process.env.PORT || '5001 (default)');
 connectDB();
 
 const app = express();
+const server = require('http').createServer(app);
+const io = require('socket.io')(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST", "PUT"]
+    }
+});
+
+// Make io accessible to our routes/controllers
+app.set('io', io);
 
 app.use(cors({
     origin: function (origin, callback) {
@@ -42,4 +52,6 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server started on port ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server started on port ${PORT}`));
+
+module.exports = app; // Export app for testing if needed
