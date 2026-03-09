@@ -12,9 +12,10 @@ interface CakeCardProps {
     sliceImage?: string;
     rating: number;
     brand: string;
+    isEggless?: boolean;
 }
 
-const CakeCard = ({ id, name, price, image, sliceImage, rating, brand }: CakeCardProps) => {
+const CakeCard = ({ id, name, price, image, sliceImage, rating, brand, isEggless }: CakeCardProps) => {
     const { isFavorite, toggleFavorite } = useFavoritesStore();
     const isFav = isFavorite(id);
     return (
@@ -42,6 +43,15 @@ const CakeCard = ({ id, name, price, image, sliceImage, rating, brand }: CakeCar
             >
                 <Heart className={`w-5 h-5 ${isFav ? 'fill-current' : ''}`} />
             </button>
+
+            {/* Dietary Badge */}
+            <div className={`absolute top-4 left-4 z-30 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-sm border backdrop-blur-md
+                ${isEggless
+                    ? 'bg-green-500/10 text-green-600 border-green-500/20'
+                    : 'bg-orange-500/10 text-orange-600 border-orange-500/20'
+                }`}>
+                {isEggless ? 'Eggless' : 'Contains Egg'}
+            </div>
 
             <Link to={`/product/${id}`} className="block relative overflow-hidden aspect-[4/5] bg-surface mx-2 mt-2 rounded-t-[1.3rem] rounded-b-xl border border-black/[0.03]">
                 {/* Main Cake Image */}

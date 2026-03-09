@@ -81,7 +81,7 @@ const Navbar = () => {
                             <Link
                                 key={link.path}
                                 to={link.path}
-                                className="relative px-4 py-2 text-sm font-medium tracking-wide text-text-muted hover:text-text-main transition-colors group rounded-lg hover:bg-black/5"
+                                className="relative px-4 py-2 text-sm font-semibold tracking-wide text-text-main hover:text-accent transition-colors group rounded-lg hover:bg-black/5"
                             >
                                 {link.label}
                                 {isActive(link.path) && (
@@ -104,7 +104,7 @@ const Navbar = () => {
                         {/* Cart */}
                         <Link
                             to="/cart"
-                            className="relative p-2.5 text-text-muted hover:text-text-main hover:bg-black/5 rounded-xl transition-all group"
+                            className="relative p-2.5 text-text-main hover:text-accent hover:bg-black/5 rounded-xl transition-all group"
                         >
                             <ShoppingBag className="w-5 h-5" />
                             <AnimatePresence>
@@ -122,7 +122,7 @@ const Navbar = () => {
                         </Link>
 
                         {/* Notification Bell */}
-                        <div className="text-text-muted hover:text-text-main [&>*]:text-text-muted group-hover:text-text-main transition-colors">
+                        <div className="text-text-main hover:text-accent [&>*]:text-text-main group-hover:text-accent transition-colors">
                             <NotificationBell />
                         </div>
 
@@ -193,7 +193,7 @@ const Navbar = () => {
                         {/* Mobile Menu Button */}
                         <button
                             onClick={() => setIsOpen(!isOpen)}
-                            className="md:hidden p-2 text-text-muted hover:text-text-main hover:bg-black/5 rounded-xl transition-colors"
+                            className="md:hidden p-2 text-text-main font-bold hover:text-accent hover:bg-black/5 rounded-xl transition-colors"
                         >
                             {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                         </button>

@@ -8,6 +8,7 @@ import {
 import { useCartStore } from '../store/useCartStore';
 import { STEP_CONFIG, STEP_KEYS, OPTIONS, BASE_PRICE, DELIVERY_FEE } from '../data/cakeOptions';
 import CakePreview3D from '../components/CakePreview3D';
+import ConflictModal from '../components/ConflictModal';
 
 // ── Shape SVGs for the selector cards ──
 const SHAPE_SVGS: Record<string, React.ReactNode> = {
@@ -46,7 +47,7 @@ const MakeMyCakePage = () => {
         Size: 'small',
     });
     const [cakeMessage, setCakeMessage] = useState('');
-    const [message, setMessage] = useState('');
+    const [message] = useState('');
     const [isAdding, setIsAdding] = useState(false);
 
     const selectionPrice = useMemo(() => {
@@ -88,6 +89,13 @@ const MakeMyCakePage = () => {
         goToStep(0);
     };
 
+    const [conflictModalOpen, setConflictModalOpen] = useState(false);
+    const [pendingItem, setPendingItem] = useState<any>(null);
+
+    const onOpenCart = () => {
+        navigate('/cart');
+    };
+
     const handleAddToCart = () => {
         if (isAdding) return;
         setIsAdding(true);
@@ -98,7 +106,7 @@ const MakeMyCakePage = () => {
 
         const stableId = `mmc-${selections.Base}-${selections.Flavour}-${selections.Design}-${selections.Size}-${cakeMessage.replace(/\s+/g, '-').toLowerCase()}`;
 
-        addToCart({
+        const item = {
             product: stableId,
             name: customName,
             image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400',
@@ -112,14 +120,31 @@ const MakeMyCakePage = () => {
                 size: selections.Size,
                 message: cakeMessage
             }
-        });
+        };
 
-        setMessage('🎉 Added to cart! Redirecting...');
-        setTimeout(() => {
-            setMessage('');
+        const result = addToCart(item);
+
+        if (!result.success) {
+            setPendingItem(item);
+            setConflictModalOpen(true);
             setIsAdding(false);
-            navigate('/cart');
+            return;
+        }
+
+        setTimeout(() => {
+            setIsAdding(false);
+            onOpenCart();
         }, 1500);
+    };
+
+    const handleConfirmClear = () => {
+        if (pendingItem) {
+            useCartStore.getState().clearCart();
+            addToCart(pendingItem);
+            setConflictModalOpen(false);
+            setPendingItem(null);
+            onOpenCart();
+        }
     };
 
     const stepConfig = STEP_CONFIG[currentStep];
@@ -356,7 +381,7 @@ const MakeMyCakePage = () => {
                             </div>
 
                             {/* 3D View Screen */}
-                            <div className="mb-6 rounded-2xl overflow-hidden bg-primary border border-black/5 relative shadow-inner">
+                            <div className="flex-1 min-h-[400px] mb-6 rounded-2xl overflow-hidden bg-primary border border-black/5 relative shadow-inner">
                                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/5 pointer-events-none z-10" />
                                 <CakePreview3D shape={selections.Base} flavour={selections.Flavour} design={selections.Design} size={selections.Size} cakeMessage={cakeMessage} />
                             </div>
@@ -402,6 +427,16 @@ const MakeMyCakePage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Conflict Modal */}
+            <ConflictModal
+                isOpen={conflictModalOpen}
+                onClose={() => {
+                    setConflictModalOpen(false);
+                    setPendingItem(null);
+                }}
+                onConfirmClear={handleConfirmClear}
+            />
         </div>
     );
 };

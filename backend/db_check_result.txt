@@ -1,0 +1,18 @@
+Connecting to: mongodb+srv://doka_user:securepassword123@cluster0.xru9fmr.mongodb.net/doka_cake_app?appName=Cluster0
+Connected to MongoDB
+
+Detail Check of last 10 orders:
+Order ID: 69a66bf889c496ef94701264, User: 699ab343f758af187f896576, UserType: object, isObjectId: true, Items: 1, CreatedAt: 2026-03-03T05:04:56.884Z
+Order ID: 69a558324f77b804d9763247, User: 699ab343f758af187f896576, UserType: object, isObjectId: true, Items: 1, CreatedAt: 2026-03-02T09:28:18.982Z
+Order ID: 69a552854f77b804d9762f0d, User: 699ab343f758af187f896576, UserType: object, isObjectId: true, Items: 1, CreatedAt: 2026-03-02T09:04:05.910Z
+Order ID: 69a54c3d782b6387540c075a, User: 699ab343f758af187f896576, UserType: object, isObjectId: true, Items: 1, CreatedAt: 2026-03-02T08:37:17.715Z
+Order ID: 69a53641782b6387540c0616, User: 699ab343f758af187f896576, UserType: object, isObjectId: true, Items: 1, CreatedAt: 2026-03-02T07:03:29.854Z
+Order ID: 69a52f1b782b6387540c0431, User: 699ab343f758af187f896576, UserType: object, isObjectId: true, Items: 1, CreatedAt: 2026-03-02T06:32:59.496Z
+Order ID: 69a52b8c782b6387540c0203, User: 699ab343f758af187f896576, UserType: object, isObjectId: true, Items: 1, CreatedAt: 2026-03-02T06:17:48.918Z
+Order ID: 69a52a5b782b6387540c0095, User: 699ab343f758af187f896576, UserType: object, isObjectId: true, Items: 1, CreatedAt: 2026-03-02T06:12:43.916Z
+Order ID: 69a51584bcb11404769ffdaa, User: 699ab343f758af187f896576, UserType: object, isObjectId: true, Items: 1, CreatedAt: 2026-03-02T04:43:48.353Z
+Order ID: 69a0009d441dc783c1f773a6, User: 699ab343f758af187f896576, UserType: object, isObjectId: true, Items: 1, CreatedAt: 2026-02-26T08:13:17.316Z
+
+Query test for User 699ab343f758af187f896576:
+Orders found with ObjectId: 50
+Orders found with String: 0

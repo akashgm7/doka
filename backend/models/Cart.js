@@ -24,7 +24,12 @@ const cartSchema = mongoose.Schema({
         ref: 'User',
         unique: true
     },
-    items: [cartItemSchema]
+    items: [cartItemSchema],
+    orderType: {
+        type: String,
+        enum: ['MMC', 'READY_MADE', null],
+        default: null
+    }
 }, {
     timestamps: true
 });

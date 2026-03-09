@@ -405,7 +405,34 @@ const debugDB = asyncHandler(async (req, res) => {
 // @route   PUT /api/users/cart
 // @access  Private
 const syncCart = asyncHandler(async (req, res) => {
+    const { cartItems: incomingItems = [] } = req.body;
     let cart = await Cart.findOne({ user: req.user._id });
+
+    // Ensure we have arrays
+    const existingItems = cart ? cart.items : [];
+
+    // --- Order validation logic ---
+    let orderType = null;
+    let hasMMC = false;
+    let hasReadyMade = false;
+
+    // Check all items (incoming) to determine if this is a mixed cart
+    incomingItems.forEach(item => {
+        const isMMCItem = item.isMMC || (item.product && String(item.product).startsWith('mmc-'));
+        if (isMMCItem) hasMMC = true;
+        else hasReadyMade = true;
+    });
+
+    if (hasMMC && hasReadyMade) {
+        res.status(400);
+        throw new Error("Custom cakes and ready-made cakes cannot be ordered together. Please place separate orders.");
+    }
+
+    if (hasMMC) {
+        orderType = 'MMC';
+    } else if (hasReadyMade) {
+        orderType = 'READY_MADE';
+    }
 
     // MERGE LOGIC:
     // 1. Items in incomingItems are mapped (preserving timestamps if they exist)
@@ -417,7 +444,8 @@ const syncCart = asyncHandler(async (req, res) => {
         const existing = existingItems.find(e => e.product === item.product);
         return {
             ...item,
-            addedAt: existing ? existing.addedAt : new Date()
+            addedAt: existing ? existing.addedAt : new Date(),
+            isMMC: item.isMMC || (item.product && String(item.product).startsWith('mmc-'))
         };
     });
 
@@ -429,18 +457,42 @@ const syncCart = asyncHandler(async (req, res) => {
     const finalItems = [...updatedIncoming, ...onlyInExisting];
     const filteredItems = filterExpiredCartItems(finalItems);
 
+    // One more check after merge just in case (though incoming should represent the full current front-end cart)
+    let finalHasMMC = false;
+    let finalHasReadyMade = false;
+    filteredItems.forEach(item => {
+        if (item.isMMC || (item.product && String(item.product).startsWith('mmc-'))) finalHasMMC = true;
+        else finalHasReadyMade = true;
+    });
+
+    if (finalHasMMC && finalHasReadyMade) {
+        res.status(400);
+        throw new Error("Custom cakes and ready-made cakes cannot be ordered together. Please place separate orders.");
+    }
+
+    if (filteredItems.length === 0) {
+        orderType = null;
+    } else if (finalHasMMC) {
+        orderType = 'MMC';
+    } else if (finalHasReadyMade) {
+        orderType = 'READY_MADE';
+    }
+
     if (cart) {
         cart.items = filteredItems;
+        cart.orderType = orderType;
         await cart.save();
     } else {
         cart = await Cart.create({
             user: req.user._id,
-            items: filteredItems
+            items: filteredItems,
+            orderType: orderType
         });
     }
 
     res.status(200).json({
-        cart: cart.items
+        cart: cart.items,
+        orderType: cart.orderType
     });
 });
 

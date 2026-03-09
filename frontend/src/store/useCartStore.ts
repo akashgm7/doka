@@ -49,7 +49,8 @@ interface CartState {
         country: string;
     };
     orderMode: OrderMode;
-    addToCart: (item: CartItem) => void;
+    orderType: 'MMC' | 'READY_MADE' | null;
+    addToCart: (item: CartItem) => { success: boolean; error?: string };
     removeFromCart: (id: string) => void;
     updateQty: (id: string, qty: number) => void;
     setOrderMode: (mode: OrderMode) => void;
@@ -67,25 +68,52 @@ export const useCartStore = create<CartState>()(
             shippingAddress: { address: '', city: '', postalCode: '', country: '' },
             paymentMethod: 'PayPal',
             orderMode: 'delivery',
+            orderType: null,
             addToCart: (item) => {
                 const cartItems = get().cartItems;
+                const currentOrderType = get().orderType;
+
+                // Determine item type
+                const itemIsMMC = item.isMMC || (item.product && String(item.product).startsWith('mmc-'));
+                const itemOrderType = itemIsMMC ? 'MMC' : 'READY_MADE';
+
+                // Check for category conflict
+                if (currentOrderType && currentOrderType !== itemOrderType) {
+                    return {
+                        success: false,
+                        error: `Custom cakes and ready-made cakes cannot be ordered together. Please place separate orders.`
+                    };
+                }
+
                 const existItem = cartItems.find((x) => x.product === item.product);
 
+                let updatedItems;
                 if (existItem) {
-                    const updatedItems = cartItems.map((x) =>
+                    updatedItems = cartItems.map((x) =>
                         x.product === existItem.product ? { ...x, qty: x.qty + item.qty } : x
                     );
-                    set({ cartItems: updatedItems });
-                    syncCartToBackend(updatedItems);
                 } else {
-                    const updatedItems = [...cartItems, item];
-                    set({ cartItems: updatedItems });
-                    syncCartToBackend(updatedItems);
+                    updatedItems = [...cartItems, item];
                 }
+
+                set({
+                    cartItems: updatedItems,
+                    orderType: itemOrderType
+                });
+                syncCartToBackend(updatedItems);
+
+                return { success: true };
             },
             removeFromCart: (id) => {
                 const updatedItems = get().cartItems.filter((x) => x.product !== id);
-                set({ cartItems: updatedItems });
+
+                let newOrderType = null;
+                if (updatedItems.length > 0) {
+                    const hasMMC = updatedItems.some(item => item.isMMC || (item.product && String(item.product).startsWith('mmc-')));
+                    newOrderType = hasMMC ? 'MMC' : 'READY_MADE';
+                }
+
+                set({ cartItems: updatedItems, orderType: newOrderType });
                 syncCartToBackend(updatedItems);
             },
             updateQty: (id, qty) => {
@@ -100,11 +128,18 @@ export const useCartStore = create<CartState>()(
             saveShippingAddress: (data) => set({ shippingAddress: data }),
             savePaymentMethod: (data) => set({ paymentMethod: data }),
             clearCart: () => {
-                set({ cartItems: [], orderMode: 'delivery' });
+                set({ cartItems: [], orderMode: 'delivery', orderType: null });
                 syncCartToBackend([]);
             },
-            resetLocalCart: () => set({ cartItems: [], orderMode: 'delivery' }),
-            setCart: (cartItems) => set({ cartItems }),
+            resetLocalCart: () => set({ cartItems: [], orderMode: 'delivery', orderType: null }),
+            setCart: (cartItems) => {
+                let newOrderType = null;
+                if (cartItems.length > 0) {
+                    const hasMMC = cartItems.some(item => item.isMMC || (item.product && String(item.product).startsWith('mmc-')));
+                    newOrderType = hasMMC ? 'MMC' : 'READY_MADE';
+                }
+                set({ cartItems, orderType: newOrderType });
+            },
         }),
         {
             name: 'cart-storage',

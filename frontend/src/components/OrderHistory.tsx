@@ -8,7 +8,9 @@ import CakePreview3D from '../components/CakePreview3D';
 import { useCartStore } from '../store/useCartStore';
 import { useNavigate } from 'react-router-dom';
 import TrackingModal from './TrackingModal';
+import FeedbackModal from './FeedbackModal';
 import { resolveImageUrl } from '../utils/imageUrl';
+import ConflictModal from './ConflictModal';
 
 
 
@@ -23,27 +25,47 @@ const OrderHistory = ({ className = '', showTitle = true }: OrderHistoryProps) =
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [trackingOrder, setTrackingOrder] = useState<any>(null);
+    const [feedbackOrder, setFeedbackOrder] = useState<any>(null);
     const addToCart = useCartStore(state => state.addToCart);
 
     const navigate = useNavigate();
 
+    const [conflictModalOpen, setConflictModalOpen] = useState(false);
+    const [pendingItems, setPendingItems] = useState<any[]>([]);
+
     const handleReorder = (order: any) => {
-        order.orderItems.forEach((item: any) => {
-            addToCart({
-                product: item.product || item._id, // product ID
-                name: item.name,
-                price: item.price,
-                image: item.image,
-                qty: item.qty,
-                customization: item.customization ? {
-                    shape: item.customization.shape,
-                    flavour: item.customization.flavour,
-                    design: item.customization.design,
-                    size: item.customization.size,
-                    message: item.customization.message
-                } : undefined
-            });
-        });
+        const items = order.orderItems.map((item: any) => ({
+            product: item.product || item._id, // product ID
+            name: item.name,
+            price: item.price,
+            image: item.image,
+            qty: item.qty || 1,
+            customization: item.customization ? {
+                shape: item.customization.shape,
+                flavour: item.customization.flavour,
+                design: item.customization.design,
+                size: item.customization.size,
+                message: item.customization.message
+            } : undefined
+        }));
+
+        if (items.length > 0) {
+            const firstResult = addToCart(items[0]);
+            if (!firstResult.success) {
+                setPendingItems(items);
+                setConflictModalOpen(true);
+                return;
+            }
+            items.slice(1).forEach((item: any) => addToCart(item));
+            navigate('/cart');
+        }
+    };
+
+    const handleConfirmClear = () => {
+        useCartStore.getState().clearCart();
+        pendingItems.forEach(item => addToCart(item));
+        setConflictModalOpen(false);
+        setPendingItems([]);
         navigate('/cart');
     };
 
@@ -58,8 +80,9 @@ const OrderHistory = ({ className = '', showTitle = true }: OrderHistoryProps) =
         setIsLoading(true);
         setError('');
         try {
-            const { data } = await api.get('/api/orders/myorders');
+            const { data } = await api.get(`/api/orders/myorders?t=${Date.now()}`);
             console.log('OrderHistory: Raw Data from API:', data);
+            console.log('OrderHistory: Count:', Array.isArray(data) ? data.length : 'Not an array');
 
             // Ensure data is an array
             if (Array.isArray(data)) {
@@ -144,21 +167,28 @@ const OrderHistory = ({ className = '', showTitle = true }: OrderHistoryProps) =
                                         }`}>
                                         {order.isPaid ? 'Settled' : 'Pending Payment'}
                                     </span>
-                                    <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border shadow-sm ${order.isDelivered || order.status === 'Delivered'
+                                    <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border shadow-sm ${order.isDelivered || order.status === 'DELIVERED'
                                         ? 'bg-accent/10 text-accent border-accent/20'
                                         : 'bg-blue-50 text-blue-600 border-blue-100'
                                         }`}>
-                                        {order.isDelivered || order.status === 'Delivered' ? 'Delivered' : 'In Preparation'}
+                                        {order.isDelivered || order.status === 'DELIVERED' ? 'Delivered' : 'In Preparation'}
                                     </span>
 
                                     <div className="h-8 w-[1px] bg-black/5 mx-2 hidden lg:block" />
 
-                                    {!(order.status === 'Delivered' || order.isDelivered) && (
+                                    {!(order.status === 'DELIVERED' || order.isDelivered) ? (
                                         <button
                                             onClick={() => setTrackingOrder(order)}
                                             className="text-[10px] font-bold text-text-muted/60 bg-primary border border-black/5 px-6 py-2.5 rounded-xl hover:bg-white hover:text-accent hover:border-accent/40 transition-all uppercase tracking-widest shadow-sm"
                                         >
                                             Track Order
+                                        </button>
+                                    ) : !order.feedback?.rating && (
+                                        <button
+                                            onClick={() => setFeedbackOrder(order)}
+                                            className="text-[10px] font-bold text-accent bg-accent/5 border border-accent/20 px-6 py-2.5 rounded-xl hover:bg-accent hover:text-white transition-all uppercase tracking-widest shadow-sm"
+                                        >
+                                            Leave Feedback
                                         </button>
                                     )}
                                     <button
@@ -220,7 +250,7 @@ const OrderHistory = ({ className = '', showTitle = true }: OrderHistoryProps) =
                         setOrders(prev =>
                             prev.map(o =>
                                 o._id === trackingOrder._id
-                                    ? { ...o, status: 'Delivered', isDelivered: true }
+                                    ? { ...o, status: 'DELIVERED', isDelivered: true }
                                     : o
                             )
                         );
@@ -229,6 +259,29 @@ const OrderHistory = ({ className = '', showTitle = true }: OrderHistoryProps) =
                     }}
                 />
             )}
+
+            {feedbackOrder && (
+                <FeedbackModal
+                    order={feedbackOrder}
+                    onClose={() => setFeedbackOrder(null)}
+                    onSubmitted={(updatedOrder) => {
+                        setOrders(prev =>
+                            prev.map(o => o._id === updatedOrder._id ? updatedOrder : o)
+                        );
+                        setFeedbackOrder(null);
+                    }}
+                />
+            )}
+
+            {/* Conflict Modal */}
+            <ConflictModal
+                isOpen={conflictModalOpen}
+                onClose={() => {
+                    setConflictModalOpen(false);
+                    setPendingItems([]);
+                }}
+                onConfirmClear={handleConfirmClear}
+            />
         </motion.div>
     );
 

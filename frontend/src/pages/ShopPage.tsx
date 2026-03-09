@@ -11,27 +11,34 @@ interface Cake {
     rating: number;
     brand: string;
     category: string;
+    isEggless?: boolean;
 }
 
 const ShopPage = () => {
     const [cakes, setCakes] = useState<Cake[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [egglessFilter, setEgglessFilter] = useState<boolean | null>(null);
+
+    const fetchCakes = async () => {
+        setLoading(true);
+        try {
+            const params: any = {};
+            if (egglessFilter !== null) {
+                params.eggless = egglessFilter;
+            }
+            const { data } = await api.get('/api/cakes', { params });
+            setCakes(data.cakes);
+        } catch (err: any) {
+            setError(err.response?.data?.message || err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchCakes = async () => {
-            try {
-                const { data } = await api.get('/api/cakes');
-                setCakes(data.cakes);
-            } catch (err: any) {
-                setError(err.response?.data?.message || err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchCakes();
-    }, []);
+    }, [egglessFilter]);
 
     return (
         <div className="pt-24 pb-20 min-h-[80vh] bg-primary relative">
@@ -44,13 +51,35 @@ const ShopPage = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
-                    className="text-center mb-16"
+                    className="text-center mb-12"
                 >
                     <h1 className="text-4xl md:text-5xl font-serif font-bold text-text-main mb-6 tracking-wide">
                         The <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-accent-light italic pr-2">Collection</span>
                     </h1>
                     <p className="text-text-muted/70 max-w-2xl mx-auto leading-relaxed">Explore our exclusive range of handcrafted cakes.</p>
                 </motion.div>
+
+                {/* Dietary Filter UI */}
+                <div className="flex justify-center mb-12">
+                    <div className="bg-white/50 backdrop-blur-md p-1.5 rounded-2xl border border-black/5 shadow-sm flex gap-1">
+                        {[
+                            { label: 'All', value: null },
+                            { label: 'Eggless', value: true },
+                            { label: 'With Egg', value: false }
+                        ].map((option) => (
+                            <button
+                                key={option.label}
+                                onClick={() => setEgglessFilter(option.value)}
+                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${egglessFilter === option.value
+                                    ? 'bg-accent text-white shadow-lg shadow-accent/20'
+                                    : 'text-text-muted hover:bg-black/5'
+                                    }`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
                 {loading ? (
                     <div className="flex justify-center items-center h-64">
@@ -63,7 +92,7 @@ const ShopPage = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                        {cakes.map((cake) => (
+                        {cakes.filter(cake => egglessFilter === null || cake.isEggless === egglessFilter).map((cake) => (
                             <CakeCard
                                 key={cake._id}
                                 id={cake._id}
@@ -72,6 +101,7 @@ const ShopPage = () => {
                                 image={cake.image}
                                 rating={cake.rating}
                                 brand={cake.brand}
+                                isEggless={cake.isEggless}
                             />
                         ))}
                     </div>

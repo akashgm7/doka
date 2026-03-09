@@ -6,6 +6,7 @@ import { useCartStore } from '../store/useCartStore';
 import { addOns } from '../data/addOns';
 import AddOnCard from '../components/AddOnCard';
 import { Sparkles, ArrowLeft, Star, Clock, ShieldCheck, ChevronRight, Plus } from 'lucide-react';
+import ConflictModal from '../components/ConflictModal';
 import { resolveImageUrl } from '../utils/imageUrl';
 
 interface Cake {
@@ -46,15 +47,35 @@ const ProductDetailsPage = () => {
         fetchCake();
     }, [id]);
 
+    const [conflictModalOpen, setConflictModalOpen] = useState(false);
+    const [pendingItem, setPendingItem] = useState<any>(null);
+
     const handleAddToCart = () => {
         if (cake) {
-            addToCart({
+            const item = {
                 product: cake._id,
                 name: cake.name,
                 image: cake.image,
                 price: cake.price,
                 qty,
-            });
+            };
+            const result = addToCart(item);
+
+            if (!result.success) {
+                setPendingItem(item);
+                setConflictModalOpen(true);
+                return;
+            }
+            navigate('/cart');
+        }
+    };
+
+    const handleConfirmClear = () => {
+        if (pendingItem) {
+            useCartStore.getState().clearCart();
+            addToCart(pendingItem);
+            setConflictModalOpen(false);
+            setPendingItem(null);
             navigate('/cart');
         }
     };
@@ -250,7 +271,17 @@ const ProductDetailsPage = () => {
                     </div>
                 </div>
             </div>
-        </div >
+
+            {/* Conflict Modal */}
+            <ConflictModal
+                isOpen={conflictModalOpen}
+                onClose={() => {
+                    setConflictModalOpen(false);
+                    setPendingItem(null);
+                }}
+                onConfirmClear={handleConfirmClear}
+            />
+        </div>
     );
 };
 

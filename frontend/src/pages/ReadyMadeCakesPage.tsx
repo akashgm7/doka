@@ -4,6 +4,7 @@ import { Search, Filter, ShoppingBag, UtensilsCrossed, PackageCheck, Truck } fro
 import api from '../services/api';
 import { useCartStore } from '../store/useCartStore';
 import CakeCard from '../components/CakeCard';
+import ConflictModal from '../components/ConflictModal';
 
 interface Cake {
     _id: string;
@@ -15,6 +16,7 @@ interface Cake {
     rating?: number;
     numReviews?: number;
     countInStock?: number;
+    isEggless?: boolean;
 }
 
 const categories = ['All', 'Chocolate', 'Fruit', 'Cheesecake', 'Classic', 'Premium', 'Exotic'];
@@ -24,6 +26,7 @@ const ReadyMadeCakesPage = () => {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
+    const [egglessFilter, setEgglessFilter] = useState<boolean | null>(null);
     const addToCart = useCartStore((state) => state.addToCart);
     const { orderMode, setOrderMode, cartItems } = useCartStore();
 
@@ -41,44 +44,76 @@ const ReadyMadeCakesPage = () => {
         { id: 'delivery' as const, label: 'Delivery', desc: 'Delivered to you', icon: Truck },
     ] as const;
 
-    useEffect(() => {
-        const fetchCakes = async () => {
-            try {
-                setLoading(true);
-                const { data } = await api.get('/api/cakes');
-                setCakes(data.cakes || data || []);
-            } catch {
-                setCakes([
-                    { _id: '1', name: 'Classic Chocolate Truffle', price: 45, image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600', category: 'Chocolate', description: 'Rich dark chocolate layers with ganache', rating: 4.9 },
-                    { _id: '2', name: 'Strawberry Delight', price: 38, image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600', category: 'Fruit', description: 'Fresh strawberries on cream sponge', rating: 4.7 },
-                    { _id: '3', name: 'Red Velvet Dream', price: 52, image: 'https://images.unsplash.com/photo-1616429562772-5264b971a8f9?w=600', category: 'Classic', description: 'Classic red velvet with cream cheese frosting', rating: 4.8 },
-                    { _id: '4', name: 'Mango Passion', price: 42, image: 'https://images.unsplash.com/photo-1571115177098-24ec42ed204d?w=600', category: 'Fruit', description: 'Tropical mango with passion fruit glaze', rating: 4.6 },
-                    { _id: '5', name: 'Pistachio Rose', price: 65, image: 'https://images.unsplash.com/photo-1587668178277-295251f900ce?w=600', category: 'Premium', description: 'Persian pistachio with rose water', rating: 5.0 },
-                    { _id: '6', name: 'Blueberry Cheesecake', price: 48, image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=600', category: 'Cheesecake', description: 'New York style with blueberry compote', rating: 4.8 },
-                    { _id: '7', name: 'Dark Forest', price: 55, image: 'https://images.unsplash.com/photo-1606983340126-99ab4feaa64a?w=600', category: 'Chocolate', description: 'Black forest with Kirsch cherries', rating: 4.9 },
-                    { _id: '8', name: 'Lemon Drizzle', price: 35, image: 'https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=600', category: 'Classic', description: 'Tangy lemon sponge with sugar glaze', rating: 4.5 },
-                ]);
-            } finally {
-                setLoading(false);
+    const fetchCakes = async () => {
+        try {
+            setLoading(true);
+            const params: any = {};
+            if (egglessFilter !== null) {
+                params.eggless = egglessFilter;
             }
-        };
+            const { data } = await api.get('/api/cakes', { params });
+            // The API returns { cakes, page, pages }
+            const cakeList = data.cakes || data || [];
+            setCakes(cakeList);
+        } catch {
+            setCakes([
+                { _id: '1', name: 'Classic Chocolate Truffle', price: 45, image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600', category: 'Chocolate', description: 'Rich dark chocolate layers with ganache', rating: 4.9, isEggless: true },
+                { _id: '2', name: 'Strawberry Delight', price: 38, image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600', category: 'Fruit', description: 'Fresh strawberries on cream sponge', rating: 4.7, isEggless: false },
+                { _id: '3', name: 'Red Velvet Dream', price: 52, image: 'https://images.unsplash.com/photo-1616429562772-5264b971a8f9?w=600', category: 'Classic', description: 'Classic red velvet with cream cheese frosting', rating: 4.8, isEggless: true },
+                { _id: '4', name: 'Mango Passion', price: 42, image: 'https://images.unsplash.com/photo-1571115177098-24ec42ed204d?w=600', category: 'Fruit', description: 'Tropical mango with passion fruit glaze', rating: 4.6, isEggless: false },
+                { _id: '5', name: 'Pistachio Rose', price: 65, image: 'https://images.unsplash.com/photo-1587668178277-295251f900ce?w=600', category: 'Premium', description: 'Persian pistachio with rose water', rating: 5.0, isEggless: true },
+                { _id: '6', name: 'Blueberry Cheesecake', price: 48, image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=600', category: 'Cheesecake', description: 'New York style with blueberry compote', rating: 4.8, isEggless: false },
+                { _id: '7', name: 'Dark Forest', price: 55, image: 'https://images.unsplash.com/photo-1606983340126-99ab4feaa64a?w=600', category: 'Chocolate', description: 'Black forest with Kirsch cherries', rating: 4.9, isEggless: true },
+                { _id: '8', name: 'Lemon Drizzle', price: 35, image: 'https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=600', category: 'Classic', description: 'Tangy lemon sponge with sugar glaze', rating: 4.5, isEggless: false },
+            ]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchCakes();
-    }, []);
+    }, [egglessFilter]);
 
     const filteredCakes = cakes.filter((cake) => {
         const matchesSearch = cake.name.toLowerCase().includes(search.toLowerCase());
         const matchesCategory = activeCategory === 'All' || cake.category === activeCategory;
-        return matchesSearch && matchesCategory;
+        const matchesDietary = egglessFilter === null || cake.isEggless === egglessFilter;
+        return matchesSearch && matchesCategory && matchesDietary;
     });
 
+    const [conflictModalOpen, setConflictModalOpen] = useState(false);
+    const [pendingCake, setPendingCake] = useState<Cake | null>(null);
+
     const handleAddToCart = (cake: Cake) => {
-        addToCart({
+        const item = {
             product: cake._id,
             name: cake.name,
             image: cake.image,
             price: cake.price,
             qty: 1,
-        });
+        };
+        const result = addToCart(item);
+
+        if (!result.success) {
+            setPendingCake(cake);
+            setConflictModalOpen(true);
+        }
+    };
+
+    const handleConfirmClear = () => {
+        if (pendingCake) {
+            useCartStore.getState().clearCart();
+            addToCart({
+                product: pendingCake._id,
+                name: pendingCake.name,
+                image: pendingCake.image,
+                price: pendingCake.price,
+                qty: 1,
+            });
+            setConflictModalOpen(false);
+            setPendingCake(null);
+        }
     };
 
     return (
@@ -135,6 +170,28 @@ const ReadyMadeCakesPage = () => {
                             ))}
                         </div>
                     </motion.div>
+                </div>
+
+                {/* Dietary Filter Toggle */}
+                <div className="flex justify-center mb-10">
+                    <div className="bg-white/60 backdrop-blur-md p-1.5 rounded-2xl border border-black/5 shadow-sm flex gap-1">
+                        {[
+                            { label: 'All', value: null },
+                            { label: 'Eggless', value: true },
+                            { label: 'With Egg', value: false }
+                        ].map((option) => (
+                            <button
+                                key={option.label}
+                                onClick={() => setEgglessFilter(option.value)}
+                                className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${egglessFilter === option.value
+                                    ? 'bg-accent text-white shadow-lg shadow-accent/20'
+                                    : 'text-text-muted hover:bg-black/5 hover:text-text-main'
+                                    }`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Order Mode Selector */}
@@ -225,6 +282,7 @@ const ReadyMadeCakesPage = () => {
                                     image={cake.image}
                                     rating={cake.rating || 5.0}
                                     brand="DOKA ATELIER"
+                                    isEggless={cake.isEggless}
                                 />
                                 {/* Add to cart overlay button that matches the new design */}
                                 <button
@@ -241,6 +299,17 @@ const ReadyMadeCakesPage = () => {
                         ))}
                     </div>
                 )}
+
+                {/* Conflict Modal */}
+                <ConflictModal
+                    isOpen={conflictModalOpen}
+                    onClose={() => {
+                        setConflictModalOpen(false);
+                        setPendingCake(null);
+                    }}
+                    pendingItem={pendingCake}
+                    onConfirmClear={handleConfirmClear}
+                />
             </div>
         </div>
     );

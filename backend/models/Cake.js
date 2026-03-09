@@ -47,6 +47,15 @@ const cakeSchema = mongoose.Schema(
             required: true,
             default: 0,
         },
+        isEggless: {
+            type: Boolean,
+            required: true,
+            default: false,
+        },
+        ingredients: {
+            type: [String],
+            default: [],
+        },
     },
     {
         timestamps: true,

@@ -42,8 +42,8 @@ const HomePage = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }}
                     >
-                        <span className="inline-flex items-center gap-2 px-5 py-2 bg-white/20 backdrop-blur-md border border-accent/20 rounded-full text-accent text-[10px] uppercase tracking-[0.5em] font-bold mb-8 shadow-sm">
-                            <Sparkles className="w-3 h-3" /> Luxury Confections · Est. 2024
+                        <span className="inline-flex items-center gap-2 px-5 py-2 bg-white/40 backdrop-blur-md border border-accent/40 rounded-full text-accent font-extrabold text-[10px] uppercase tracking-[0.5em] mb-8 shadow-sm">
+                            <Sparkles className="w-3 h-3 text-accent" /> Luxury Confections · Est. 2024
                         </span>
 
                         <div className="text-center mb-10 mt-6 pointer-events-auto select-none">
@@ -93,7 +93,7 @@ const HomePage = () => {
                             </motion.span>
                         </div>
 
-                        <p className="text-text-muted/70 text-base md:text-lg font-light max-w-xl mx-auto mb-10 leading-relaxed">
+                        <p className="text-text-main/90 text-base md:text-lg font-light max-w-xl mx-auto mb-10 leading-relaxed drop-shadow-sm">
                             Where haute couture meets fine patisserie. Every creation is a bespoke masterpiece designed for your most cherished moments.
                         </p>
 

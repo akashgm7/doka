@@ -2,6 +2,14 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const express = require('express');
+const fs = require('fs');
+const fsPath = require('path');
+
+const accessLogStream = (req) => {
+    const authHeader = req.headers.authorization || 'No Auth';
+    const logBatch = `[${new Date().toISOString()}] ${req.method} ${req.url} Auth: ${authHeader.substring(0, 20)}...\n`;
+    fs.appendFileSync(fsPath.join(__dirname, 'all_requests.log'), logBatch);
+};
 const cors = require('cors');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
@@ -39,6 +47,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // Global Request Logger
 app.use((req, res, next) => {
+    accessLogStream(req);
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });

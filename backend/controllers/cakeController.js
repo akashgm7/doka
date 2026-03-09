@@ -7,9 +7,14 @@ const Cake = require('../models/Cake');
 const getCakes = asyncHandler(async (req, res) => {
     const pageSize = 12;
     const page = Number(req.query.pageNumber) || 1;
+    const eggless = req.query.eggless;
+    let filter = {};
+    if (eggless !== undefined) {
+        filter.isEggless = eggless === 'true';
+    }
 
-    const count = await Cake.countDocuments({});
-    const cakes = await Cake.find({})
+    const count = await Cake.countDocuments(filter);
+    const cakes = await Cake.find(filter)
         .limit(pageSize)
         .skip(pageSize * (page - 1));
 

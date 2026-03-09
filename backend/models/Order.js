@@ -55,6 +55,12 @@ const orderSchema = mongoose.Schema(
             type: Boolean,
             default: false
         },
+        orderType: {
+            type: String,
+            enum: ['MMC', 'READY_MADE'],
+            required: true,
+            default: 'READY_MADE'
+        },
         paymentResult: {
             id: { type: String },
             status: { type: String },
@@ -94,8 +100,8 @@ const orderSchema = mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['Pending', 'Confirmed', 'Baking', 'In Production', 'Ready', 'Delivered', 'Completed', 'Cancelled'],
-            default: 'Pending',
+            enum: ['PENDING', 'CONFIRMED', 'BAKING', 'IN_PRODUCTION', 'READY', 'DELIVERED', 'COMPLETED', 'CANCELLED'],
+            default: 'PENDING',
         },
         earnedLoyaltyPoints: {
             type: Number,
@@ -108,6 +114,12 @@ const orderSchema = mongoose.Schema(
         discountAmount: {
             type: Number,
             default: 0,
+        },
+        // Customer Feedback
+        feedback: {
+            rating: { type: Number, min: 1, max: 5 },
+            comment: { type: String, trim: true },
+            submittedAt: { type: Date }
         },
     },
     {

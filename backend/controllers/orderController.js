@@ -2,11 +2,21 @@ const asyncHandler = require('express-async-handler');
 const Order = require('../models/Order');
 const User = require('../models/User');
 const LoyaltyConfig = require('../models/LoyaltyConfig');
+const fs = require('fs');
+const path = require('path');
+
+const logFile = path.join(__dirname, '..', 'debug_orders.log');
+const debugLog = (msg) => {
+    const timestamp = new Date().toISOString();
+    fs.appendFileSync(logFile, `[${timestamp}] ${msg}\n`);
+};
+
 
 // @desc    Create new order
 // @route   POST /api/orders
 // @access  Private
 const addOrderItems = asyncHandler(async (req, res) => {
+    debugLog(`[ADD_ORDER] User: ${req.user ? req.user._id : 'No User'}, Email: ${req.user ? req.user.email : 'N/A'}`);
     console.log('[ORDER] Request User:', req.user ? req.user._id : 'No User');
     const {
         orderItems,
@@ -42,9 +52,22 @@ const addOrderItems = asyncHandler(async (req, res) => {
         }
 
         // Detect IF any item is MMC
-        const isMMC = orderItems.some(item =>
-            item.product && String(item.product).startsWith('mmc-')
-        );
+        let hasMMC = false;
+        let hasReadyMade = false;
+
+        orderItems.forEach(item => {
+            const isMMCItem = item.isMMC || (item.product && String(item.product).startsWith('mmc-'));
+            if (isMMCItem) hasMMC = true;
+            else hasReadyMade = true;
+        });
+
+        if (hasMMC && hasReadyMade) {
+            res.status(400);
+            throw new Error("Custom cakes and ready-made cakes cannot be ordered together. Please place separate orders.");
+        }
+
+        const isMMC = hasMMC;
+        const orderType = hasMMC ? 'MMC' : 'READY_MADE';
 
         // Calculate loyalty points using dynamic config
         const config = await LoyaltyConfig.findOne();
@@ -78,6 +101,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
             status: 'PENDING',
             brandId: 'brand-001',
             isMMC,
+            orderType,
             earnedLoyaltyPoints: points,
             redeemedLoyaltyPoints: pointsToRedeem,
             discountAmount: discountAmount,
@@ -139,9 +163,14 @@ const getOrderById = asyncHandler(async (req, res) => {
 // @route   GET /api/orders/myorders
 // @access  Private
 const getMyOrders = asyncHandler(async (req, res) => {
-    console.log('[ORDER] Fetching orders for user:', req.user._id);
+    debugLog(`[GET_MY_ORDERS] User: ${req.user ? req.user._id : 'No User'}, Email: ${req.user ? req.user.email : 'N/A'}`);
+    console.log('[ORDER] Fetching orders for user ID:', req.user._id);
     const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
-    console.log(`[ORDER] Found ${orders.length} orders`);
+    if (orders.length > 0) {
+        console.log(`[ORDER] Most recent order ID being sent: ${orders[0]._id}`);
+    }
+    debugLog(`[GET_MY_ORDERS] Found ${orders.length} orders for user ${req.user._id}`);
+    console.log(`[ORDER] Success! Found ${orders.length} orders for user ${req.user.email}`);
     res.json(orders);
 });
 
@@ -206,10 +235,70 @@ const updateOrderToDelivered = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Submit feedback for a delivered order
+// @route   POST /api/orders/:id/feedback
+// @access  Private (order owner only)
+const submitFeedback = asyncHandler(async (req, res) => {
+    const { rating, comment } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+        res.status(400);
+        throw new Error('Rating must be between 1 and 5');
+    }
+
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+        res.status(404);
+        throw new Error('Order not found');
+    }
+
+    // Only order owner can submit feedback
+    if (order.user.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error('Not authorized to submit feedback for this order');
+    }
+
+    if (order.status !== 'DELIVERED') {
+        res.status(400);
+        throw new Error('Feedback can only be submitted for delivered orders');
+    }
+
+    if (order.feedback && order.feedback.rating) {
+        res.status(400);
+        throw new Error('Feedback already submitted for this order');
+    }
+
+    order.feedback = {
+        rating: Number(rating),
+        comment: comment || '',
+        submittedAt: new Date()
+    };
+
+    const updatedOrder = await order.save();
+
+    // Emit real-time socket event so Admin dashboard can show feedback live
+    const io = req.app.get('io');
+    if (io) {
+        io.emit('feedbackAdded', {
+            orderId: order._id,
+            storeId: order.storeId,
+            brandId: order.brandId,
+            feedback: order.feedback,
+            customerName: req.user.name || 'Customer',
+            orderRef: order.orderId || order._id
+        });
+        console.log(`[SOCKET] Emitted feedbackAdded for order: ${order._id}`);
+    }
+
+    res.json(updatedOrder);
+});
+
 module.exports = {
     addOrderItems,
     getOrderById,
     getMyOrders,
     updateOrderToDelivered,
     updateOrderStatus,
+    submitFeedback,
 };
