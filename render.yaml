@@ -4,7 +4,8 @@ services:
     name: cake-customer-frontend
     runtime: static
     buildCommand: npm install && npm run build
-    staticPublishPath: frontend/dist
+    rootDirectory: frontend
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
         fromService:
