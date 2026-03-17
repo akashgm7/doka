@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Sparkles, Instagram, Facebook } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 const Footer = () => {
     return (

@@ -307,7 +307,6 @@ const ReadyMadeCakesPage = () => {
                         setConflictModalOpen(false);
                         setPendingCake(null);
                     }}
-                    pendingItem={pendingCake}
                     onConfirmClear={handleConfirmClear}
                 />
             </div>

@@ -107,7 +107,7 @@ export const useCartStore = create<CartState>()(
             removeFromCart: (id) => {
                 const updatedItems = get().cartItems.filter((x) => x.product !== id);
 
-                let newOrderType = null;
+                let newOrderType: 'MMC' | 'READY_MADE' | null = null;
                 if (updatedItems.length > 0) {
                     const hasMMC = updatedItems.some(item => item.isMMC || (item.product && String(item.product).startsWith('mmc-')));
                     newOrderType = hasMMC ? 'MMC' : 'READY_MADE';
@@ -133,7 +133,7 @@ export const useCartStore = create<CartState>()(
             },
             resetLocalCart: () => set({ cartItems: [], orderMode: 'delivery', orderType: null }),
             setCart: (cartItems) => {
-                let newOrderType = null;
+                let newOrderType: 'MMC' | 'READY_MADE' | null = null;
                 if (cartItems.length > 0) {
                     const hasMMC = cartItems.some(item => item.isMMC || (item.product && String(item.product).startsWith('mmc-')));
                     newOrderType = hasMMC ? 'MMC' : 'READY_MADE';
