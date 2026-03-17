@@ -17,8 +17,9 @@ const TrackingModal = ({ order: initialOrder, onClose, onDelivered }: TrackingMo
     const [showFeedback, setShowFeedback] = useState(false);
 
     const steps = [
-        { icon: Package, label: 'Order Confirmed', time: 'Just now', statuses: ['PENDING', 'CONFIRMED'] },
-        { icon: ChefHat, label: 'Baking in Progress', time: '~15 mins', statuses: ['IN_PRODUCTION'] },
+        { icon: Package, label: 'Order Placed', time: 'Just now', statuses: ['PENDING'] },
+        { icon: Check, label: 'Order Confirmed', time: '~5 mins', statuses: ['CONFIRMED'] },
+        { icon: ChefHat, label: 'Baking in Progress', time: '~15 mins', statuses: ['BAKING', 'IN_PRODUCTION'] },
         { icon: Check, label: 'Quality Check', time: '~30 mins', statuses: ['READY'] },
         { icon: Truck, label: 'Out for Delivery', time: '~45 mins', statuses: ['OUT_FOR_DELIVERY'] },
         { icon: Home, label: 'Delivered', time: '~60 mins', statuses: ['DELIVERED'] },

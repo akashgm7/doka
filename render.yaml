@@ -1,0 +1,40 @@
+services:
+  # Customer Frontend (React/Vite)
+  - type: web
+    name: cake-customer-frontend
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: cake-customer-backend
+          type: web
+          property: host
+
+  # Customer Backend (Node.js/Express)
+  - type: web
+    name: cake-customer-backend
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    rootDirectory: backend
+    envVars:
+      - key: MONGO_URI
+        sync: false # User will need to provide their MongoDB Atlas URL
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 5001
+      - key: SMTP_HOST
+        value: smtp.mailtrap.io
+      - key: SMTP_PORT
+        value: 2525
+      - key: SMTP_EMAIL
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: FROM_EMAIL
+        value: noreply@doka.com
+      - key: FROM_NAME
+        value: DOKA Cakes

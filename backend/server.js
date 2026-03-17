@@ -57,6 +57,10 @@ app.use('/api/cakes', cakeRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/notifications', notificationRoutes);
 
+app.get('/', (req, res) => {
+    res.send('Cake Customer API is running');
+});
+
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;

@@ -389,17 +389,6 @@ const getFavorites = asyncHandler(async (req, res) => {
     res.json({ favorites: (user.favorites || []).map(id => id.toString()) });
 });
 
-// @route   GET /api/users/debug-db
-// @access  Public
-const debugDB = asyncHandler(async (req, res) => {
-    const mongoose = require('mongoose');
-    res.json({
-        host: mongoose.connection.host,
-        name: mongoose.connection.name,
-        readyState: mongoose.connection.readyState,
-        uri: process.env.MONGO_URI ? 'Defined' : 'UNDEFINED'
-    });
-});
 
 // @desc    Sync user cart
 // @route   PUT /api/users/cart
@@ -508,6 +497,5 @@ module.exports = {
     forgotPassword,
     resetPassword,
     verifyEmail,
-    debugDB,
     syncCart
 };

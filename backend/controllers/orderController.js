@@ -12,6 +12,8 @@ const debugLog = (msg) => {
 };
 
 
+const Cake = require('../models/Cake');
+
 // @desc    Create new order
 // @route   POST /api/orders
 // @access  Private
@@ -22,10 +24,8 @@ const addOrderItems = asyncHandler(async (req, res) => {
         orderItems,
         shippingAddress,
         paymentMethod,
-        itemsPrice,
-        taxPrice,
-        shippingPrice,
-        totalPrice: clientTotalPrice,
+        taxPrice = 0,
+        shippingPrice = 0,
         orderMode,
         redeemedLoyaltyPoints,
     } = req.body;
@@ -33,8 +33,28 @@ const addOrderItems = asyncHandler(async (req, res) => {
     if (orderItems && orderItems.length === 0) {
         res.status(400);
         throw new Error('No order items');
-        return;
     } else {
+        // --- LOOPHOLE FIX: Recalculate Prices On Server ---
+        let itemsPriceRecalculated = 0;
+        
+        for (const item of orderItems) {
+            const isMMCItem = item.isMMC || (item.product && String(item.product).startsWith('mmc-'));
+            
+            if (isMMCItem) {
+                // If it's a Custom Cake, we trust the item price for now as it's dynamic
+                // In a full implementation, we'd verify the custom options against a price list
+                itemsPriceRecalculated += Number(item.price) * Number(item.qty);
+            } else {
+                // Verify against Database price
+                const cake = await Cake.findById(item.product);
+                if (!cake) {
+                    res.status(404);
+                    throw new Error(`Product not found: ${item.name}`);
+                }
+                itemsPriceRecalculated += cake.price * Number(item.qty);
+            }
+        }
+
         // Handle Loyalty Point Redemption
         let discountAmount = 0;
         const pointsToRedeem = parseInt(redeemedLoyaltyPoints, 10) || 0;
@@ -73,10 +93,9 @@ const addOrderItems = asyncHandler(async (req, res) => {
         const config = await LoyaltyConfig.findOne();
         let points = 0;
 
-        // BUG FIX: The frontend already subtracts pointsToRedeem from the total. 
-        // We SHOULD NOT subtract it again here. We trust the clientTotalPrice as the final target price.
-        const finalTotalPrice = Math.max(0, clientTotalPrice || 0);
-        console.log(`[ORDER] Client Total: ${clientTotalPrice}, Discount Applied: ${discountAmount}, Final Storage Price: ${finalTotalPrice}`);
+        // Calculate Final Total on Server
+        const finalTotalPrice = Math.max(0, itemsPriceRecalculated + Number(taxPrice) + Number(shippingPrice) - discountAmount);
+        console.log(`[ORDER] Recalculated Items Price: ${itemsPriceRecalculated}, Final Total: ${finalTotalPrice}`);
 
         if (config && config.enabled && finalTotalPrice >= config.minOrderValueForEarn) {
             points = Math.floor(finalTotalPrice * config.earnRate);
@@ -90,7 +109,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
             user: req.user._id,
             shippingAddress: shippingAddress || { address: 'Not provided', city: 'Not provided', postalCode: '00000', country: 'IN' },
             paymentMethod: paymentMethod || 'Mock',
-            itemsPrice: itemsPrice || 0,
+            itemsPrice: itemsPriceRecalculated,
             taxPrice: taxPrice || 0,
             shippingPrice: shippingPrice || 0,
             totalPrice: finalTotalPrice,
@@ -122,10 +141,21 @@ const addOrderItems = asyncHandler(async (req, res) => {
 
         console.log(`[LOYALTY] Persisting changes. Earned: ${points}, Spent: ${pointsToRedeem}, Net: ${pointsNetChange}`);
 
+        // --- LOOPHOLE FIX: Prevent Negative Points using atomic update filter ---
         const updateResult = await User.updateOne(
-            { _id: req.user._id },
+            { 
+                _id: req.user._id,
+                loyaltyPoints: { $gte: pointsToRedeem } // Ensure points weren't spent by someone else
+            },
             { $inc: { loyaltyPoints: pointsNetChange } }
         );
+
+        if (updateResult.modifiedCount === 0 && pointsToRedeem > 0) {
+             // If we failed to update because points were insufficient, we might need a rollback or error
+             // But the order is already saved. In a production system, use a transaction.
+             console.error('[LOYALTY] ❌ Atomic update failed. Points might have been stolen/spent.');
+             // Since we don't have transactions easily here, we'll just log it for now.
+        }
 
         console.log('[LOYALTY] DB Update Result:', updateResult);
 
@@ -152,6 +182,11 @@ const getOrderById = asyncHandler(async (req, res) => {
     );
 
     if (order) {
+        // --- LOOPHOLE FIX: Ownership Check ---
+        if (order.user._id.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+            res.status(403);
+            throw new Error('Not authorized to view this order');
+        }
         res.json(order);
     } else {
         res.status(404);
@@ -259,7 +294,7 @@ const submitFeedback = asyncHandler(async (req, res) => {
         throw new Error('Not authorized to submit feedback for this order');
     }
 
-    if (order.status !== 'DELIVERED') {
+    if (order.status !== 'Delivered') {
         res.status(400);
         throw new Error('Feedback can only be submitted for delivered orders');
     }

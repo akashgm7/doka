@@ -167,11 +167,23 @@ const OrderHistory = ({ className = '', showTitle = true }: OrderHistoryProps) =
                                         }`}>
                                         {order.isPaid ? 'Settled' : 'Pending Payment'}
                                     </span>
-                                    <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border shadow-sm ${order.isDelivered || order.status === 'DELIVERED'
-                                        ? 'bg-accent/10 text-accent border-accent/20'
-                                        : 'bg-blue-50 text-blue-600 border-blue-100'
+                                    <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border shadow-sm ${order.status === 'CANCELLED'
+                                        ? 'bg-red-50 text-red-600 border-red-100'
+                                        : order.status === 'DELIVERED' || order.isDelivered
+                                            ? 'bg-accent/10 text-accent border-accent/20'
+                                            : order.status === 'CONFIRMED'
+                                                ? 'bg-green-50 text-green-600 border-green-100'
+                                                : order.status === 'PENDING'
+                                                    ? 'bg-amber-50 text-amber-600 border-amber-100'
+                                                    : 'bg-blue-50 text-blue-600 border-blue-100'
                                         }`}>
-                                        {order.isDelivered || order.status === 'DELIVERED' ? 'Delivered' : 'In Preparation'}
+                                        {order.status === 'CANCELLED' ? 'Cancelled' :
+                                            order.status === 'DELIVERED' || order.isDelivered ? 'Delivered' :
+                                                order.status === 'CONFIRMED' ? 'Confirmed' :
+                                                    order.status === 'PENDING' ? 'Awaiting Confirmation' :
+                                                        order.status === 'READY' ? 'Order Ready' :
+                                                            order.status === 'OUT_FOR_DELIVERY' ? 'Out for Delivery' :
+                                                                'In Preparation'}
                                     </span>
 
                                     <div className="h-8 w-[1px] bg-black/5 mx-2 hidden lg:block" />
