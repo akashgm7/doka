@@ -381,8 +381,7 @@ const MakeMyCakePage = () => {
                             </div>
 
                             {/* 3D View Screen */}
-                            <div className="flex-1 min-h-[400px] mb-6 rounded-2xl overflow-hidden bg-primary border border-black/5 relative shadow-inner">
-                                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/5 pointer-events-none z-10" />
+                            <div className="w-full h-[600px] mb-6 rounded-2xl overflow-hidden bg-primary border border-black/5 relative">
                                 <CakePreview3D shape={selections.Base} flavour={selections.Flavour} design={selections.Design} size={selections.Size} cakeMessage={cakeMessage} />
                             </div>
 
