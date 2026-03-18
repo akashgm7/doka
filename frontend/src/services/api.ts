@@ -1,47 +1,62 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 
+const getBaseURL = () => {
+    let url = (import.meta.env.VITE_API_URL || '').trim();
+    if (url.endsWith('/')) {
+        url = url.slice(0, -1);
+    }
+    return url || `http://${window.location.hostname}:5001`;
+};
+
 const api = axios.create({
-    baseURL: (import.meta.env.VITE_API_URL || '').trim() || `http://${window.location.hostname}:5001`,
+    baseURL: getBaseURL(),
 });
 
 api.interceptors.request.use(
     (config) => {
-        // Use getState() to get the most recent token (even if store just hydrated)
         const state = useAuthStore.getState();
         const token = state.token;
 
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
             if (import.meta.env.DEV) {
-                console.log(`[API] 🚀 Requesting: ${config.url} (Token attached)`);
+                console.log(`[API] 🚀 Requesting: ${config.method?.toUpperCase()} ${config.url} (Token: ...${token.slice(-5)})`);
             }
         } else {
-            // Check localStorage directly as a fallback to see if hydration is the issue
-            const rawStorage = localStorage.getItem('auth-storage');
-            let storedToken = null;
-            if (rawStorage) {
-                try {
-                    const parsed = JSON.parse(rawStorage);
-                    storedToken = parsed.state?.token;
-                } catch (e) {}
-            }
-
-            console.warn(`[API] ⚠️ No token found for: ${config.url}.
-                Store Hydrated: ${state._hasHydrated}
-                Store Token: ${token ? 'exists' : 'null'}
-                LocalStorage Token: ${storedToken ? 'exists' : 'null'}
-                User: ${state.user ? state.user.name : 'null'}`);
+            // Enhanced logging for production/debug
+            const hasRawStorage = !!localStorage.getItem('auth-storage');
+            console.warn(`[API] ⚠️ No token found for: ${config.url}. Hydrated: ${state._hasHydrated}, LS: ${hasRawStorage}, User: ${!!state.user}`);
             
-            // If store has no token but localStorage DOES, it means hydration issue
-            if (!token && storedToken) {
-                console.log('[API] 💡 Found token in localStorage that state missed. Attaching anyway.');
-                config.headers.Authorization = `Bearer ${storedToken}`;
+            // Try to recover if possible
+            if (hasRawStorage && !token) {
+                try {
+                    const parsed = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+                    const recoveredToken = parsed.state?.token;
+                    if (recoveredToken) {
+                        console.log('[API] 💡 Recovered token from storage for request');
+                        config.headers.Authorization = `Bearer ${recoveredToken}`;
+                    }
+                } catch (e) {}
             }
         }
         return config;
     },
+    (error) => Promise.reject(error)
+);
+
+api.interceptors.response.use(
+    (response) => response,
     (error) => {
+        if (error.response?.status === 401) {
+            console.error('[API] ❌ 401 Unauthorized received for:', error.config.url);
+            // If it's a 401 and we're not on the login page, it's a stale session
+            if (!window.location.pathname.includes('/login')) {
+                // Clear store and redirect
+                // useAuthStore.getState().logout(); // Optional: selective logout?
+                console.warn('[API] Redirecting to login due to 401 auth failure.');
+            }
+        }
         return Promise.reject(error);
     }
 );
