@@ -26,7 +26,8 @@ const FeedbackModal = ({ order, onClose, onSubmitted }: FeedbackModalProps) => {
         setError('');
         try {
             // Using port 5002 (Admin Backend) so the socket event reaches the Admin Dashboard
-            const res = await api.post(`http://${window.location.hostname}:5002/api/orders/${order._id}/feedback`, { rating, comment });
+            const adminUrl = (import.meta.env.VITE_ADMIN_API_URL || '').trim() || `${window.location.protocol}//${window.location.hostname}:5002`;
+            const res = await api.post(`${adminUrl}/api/orders/${order._id}/feedback`, { rating, comment });
             onSubmitted(res.data);
             onClose();
         } catch (err: any) {

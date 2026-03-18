@@ -35,10 +35,11 @@ const TrackingModal = ({ order: initialOrder, onClose, onDelivered }: TrackingMo
     useEffect(() => {
         setCurrentStep(getStepIdx(order.status));
 
-        const socket = io(`http://${window.location.hostname}:5002`);
+        const adminUrl = (import.meta.env.VITE_ADMIN_API_URL || '').trim() || `${window.location.protocol}//${window.location.hostname}:5002`;
+        const socket = io(adminUrl);
 
         socket.on('connect', () => {
-            console.log('[Tracking] Connected to status server on port 5002');
+            console.log('[Tracking] Connected to status server');
         });
 
         socket.on('orderStatusUpdated', (data) => {
