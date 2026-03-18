@@ -9,12 +9,12 @@ export interface UserNotification {
     type: string;
 }
 
-// Direct axios instance pointing to the CAKE2 admin server (port 5002)
-// which holds the shared doka_cake_app database and the notifications collection.
-// We call the public endpoint — no auth token required.
+// Direct axios instance pointing to the CAKE2 admin server
+// We use VITE_ADMIN_API_URL or fall back to the current hostname
 const adminApi = axios.create({
-    baseURL: `http://${window.location.hostname}:5002`,
+    baseURL: (import.meta.env.VITE_ADMIN_API_URL || '').trim() || `${window.location.protocol}//${window.location.hostname}:5002`,
 });
+
 
 // Fetch public notifications — messages targeted at customers or all users.
 // The /public endpoint on the server already filters to only 'All Users' and 'Customers' targets.

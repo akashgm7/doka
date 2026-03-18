@@ -12,8 +12,10 @@ export const resolveImageUrl = (path: string | undefined): string => {
 
     // If it's a relative path from the upload folder, point to the admin backend
     if (path.startsWith('/uploads')) {
-        return `http://${window.location.hostname}:5002${path}`;
+        const adminUrl = (import.meta.env.VITE_ADMIN_API_URL || '').trim() || `${window.location.protocol}//${window.location.hostname}:5002`;
+        return `${adminUrl}${path}`;
     }
+
 
     // Fallback or relative to current origin if needed
     return path;

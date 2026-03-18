@@ -20,7 +20,7 @@ interface OrderHistoryProps {
 }
 
 const OrderHistory = ({ className = '', showTitle = true }: OrderHistoryProps) => {
-    const { user } = useAuthStore();
+    const { user, token, _hasHydrated } = useAuthStore();
     const [orders, setOrders] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -71,17 +71,20 @@ const OrderHistory = ({ className = '', showTitle = true }: OrderHistoryProps) =
 
 
     useEffect(() => {
-        if (user) {
+        if (user && token && _hasHydrated) {
             fetchOrders();
         }
-    }, [user]);
+    }, [user, token, _hasHydrated]);
 
     const fetchOrders = async () => {
         setIsLoading(true);
         setError('');
         try {
             const { data } = await api.get(`/api/orders/myorders?t=${Date.now()}`);
-            console.log('OrderHistory: Raw Data from API:', data);
+            if (import.meta.env.DEV) {
+                console.log('OrderHistory: Raw Data from API:', data);
+            }
+
             console.log('OrderHistory: Count:', Array.isArray(data) ? data.length : 'Not an array');
 
             // Ensure data is an array

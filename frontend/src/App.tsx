@@ -41,28 +41,22 @@ const ScrollToTop = () => {
 // Component to handle initialization logic
 const AppContent = () => {
   const [loading, setLoading] = useState(true);
-  const { setCredentials, logout } = useAuthStore();
+  const { setCredentials, logout, _hasHydrated } = useAuthStore();
   const { fetchFavorites, clearFavorites } = useFavoritesStore();
   const { resetLocalCart } = useCartStore();
 
   useEffect(() => {
-    // Simulate initialization check
     const initApp = async () => {
-      // Check for first-time visitor
-      const isFirstVisit = !localStorage.getItem('hasVisited');
+      // 1. Wait for store hydration to be certain token is available
+      if (!_hasHydrated) return;
 
-      // 1. Check for valid session and refresh user data first
-      const token = localStorage.getItem('auth-storage')
-        ? JSON.parse(localStorage.getItem('auth-storage') || '{}').state?.token
-        : null;
+      const isFirstVisit = !localStorage.getItem('hasVisited');
+      const token = useAuthStore.getState().token;
 
       if (token) {
         try {
-          const { data } = await api.get('/api/users/me', {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
+          const { data } = await api.get('/api/users/me');
+
           setCredentials({ ...data, token });
           if (data.cart) {
             useCartStore.getState().setCart(data.cart);
@@ -88,7 +82,8 @@ const AppContent = () => {
     };
 
     initApp();
-  }, []);
+  }, [_hasHydrated]);
+
 
   return (
     <>
