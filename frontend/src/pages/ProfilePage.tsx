@@ -261,6 +261,31 @@ const ProfilePage = () => {
         { id: 'favorites', label: 'Saved', icon: Heart },
     ] as const;
 
+    const SessionDiagnostic = () => {
+        const state = useAuthStore.getState();
+        const [lsData, setLsData] = useState<string | null>(null);
+
+        useEffect(() => {
+            setLsData(localStorage.getItem('auth-storage'));
+        }, []);
+
+        return (
+            <div className="mt-8 p-4 bg-black/80 rounded-2xl border border-white/10 font-mono text-[10px] text-green-400 overflow-hidden">
+                <p className="font-bold border-b border-white/10 pb-2 mb-2 text-white">Diagnostic Atelier Session</p>
+                <p>User: {state.user ? '✅' : '❌'}</p>
+                <p>Token: {state.token ? `✅ (...${state.token.slice(-6)})` : '❌'}</p>
+                <p>Hydrated: {state._hasHydrated ? '✅' : '❌'}</p>
+                <p className="mt-2 text-white/40">Storage: {lsData ? 'Present' : 'Missing'}</p>
+                <button 
+                  onClick={() => { window.location.reload(); }}
+                  className="mt-4 w-full py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+                >
+                  Force Hard Reset
+                </button>
+            </div>
+        );
+    };
+
     return (
         <div className="min-h-screen pt-24 pb-16 relative bg-primary">
             {/* Ambient effects */}
@@ -348,6 +373,9 @@ const ProfilePage = () => {
                                     >
                                         <LogOut className="w-3.5 h-3.5" /> Secure Sign Out
                                     </button>
+                                </div>
+                                <div className="px-4 pb-8">
+                                    <SessionDiagnostic />
                                 </div>
                             </div>
                         </motion.div>
