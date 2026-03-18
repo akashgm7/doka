@@ -41,21 +41,37 @@ export const useAuthStore = create<AuthState>()(
             loginTime: null,
             _hasHydrated: false,
             setCredentials: (user) => set((state) => {
-                const newToken = user.token || state.token;
+                // Determine the best token to use
+                // 1. New token from user object
+                // 2. Existing token in state
+                // 3. Last desperate check in localStorage
+                let newToken = user.token || state.token;
+                
+                if (!newToken) {
+                    try {
+                        const saved = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+                        newToken = saved.state?.token;
+                    } catch (e) {}
+                }
+
                 if (import.meta.env.DEV) {
-                    console.log('[AuthStore] Updating credentials:', { 
-                        hasUser: !!user, 
-                        hasToken: !!newToken,
-                        tokenSource: user.token ? 'new-user-obj' : 'existing-state'
+                    console.log('[AuthStore] Syncing credentials:', { 
+                        user: user.email, 
+                        tokenFound: !!newToken 
                     });
                 }
+
                 return {
                     user,
                     token: newToken,
                     loginTime: state.loginTime || new Date().toISOString()
                 };
             }),
-            logout: () => set({ user: null, token: null, loginTime: null }),
+            logout: () => {
+                console.warn('[AuthStore] Session terminated.');
+                localStorage.removeItem('auth-storage'); // Force clear
+                set({ user: null, token: null, loginTime: null });
+            },
             setHasHydrated: (state) => set({ _hasHydrated: state }),
         }),
         {

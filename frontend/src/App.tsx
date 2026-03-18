@@ -47,36 +47,40 @@ const AppContent = () => {
 
   useEffect(() => {
     const initApp = async () => {
-      // 1. Wait for store hydration to be certain token is available
       if (!_hasHydrated) return;
 
-      const isFirstVisit = !localStorage.getItem('hasVisited');
-      const token = useAuthStore.getState().token;
-
-      if (token) {
-        try {
+      const state = useAuthStore.getState();
+      const token = state.token;
+      
+      try {
+        if (token) {
           const { data } = await api.get('/api/users/me');
-
           setCredentials({ ...data, token });
+          
           if (data.cart) {
             useCartStore.getState().setCart(data.cart);
           }
-          // Load this user's favorites from MongoDB
           await fetchFavorites();
-        } catch (error) {
-          console.error('Session validation failed:', error);
+        } else if (state.user) {
+          console.warn('Inconsistent auth state: user exists but token is null. Logging out.');
+          logout();
           clearFavorites();
           resetLocalCart();
+        }
+      } catch (error: any) {
+        console.error('App initialization failed:', error);
+        if (error.response?.status === 401) {
           logout();
+          clearFavorites();
+          resetLocalCart();
         }
       }
 
-      // 2. Delay for splash screen animation
+      // Delay for splash screen
       await new Promise(resolve => setTimeout(resolve, 2500));
-
       setLoading(false);
 
-      if (isFirstVisit) {
+      if (!localStorage.getItem('hasVisited')) {
         localStorage.setItem('hasVisited', 'true');
       }
     };
