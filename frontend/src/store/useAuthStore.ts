@@ -56,15 +56,14 @@ export const useAuthStore = create<AuthState>()(
                 };
             }),
             setCredentials: (user: User) => set((state) => {
-                let newToken = user.token || state.token;
+                const newToken = user.token || state.token || null;
                 
-                // Defensive check
-                if (!newToken || newToken === 'null' || newToken === 'undefined') {
-                    return state; 
+                if (!newToken) {
+                    console.warn('[AuthStore] ⚠️ setCredentials called with no token! Session will not be authenticated.');
                 }
                 
                 return {
-                    user: { ...user, token: newToken },
+                    user: { ...user, token: newToken || '' },
                     token: newToken,
                     loginTime: state.loginTime || new Date().toISOString()
                 };

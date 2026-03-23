@@ -232,17 +232,21 @@ const loginUser = asyncHandler(async (req, res) => {
 
         console.log('[LOGIN] ✅ Success! Returning data for:', user.email);
         const token = generateToken(user._id);
-        console.log('[LOGIN] 🔑 Generated Token:', token ? '✅ Exists' : '❌ MISSING');
+        console.log('[LOGIN] 🔑 Generated Token:', token ? '✅ Exists' : '❌ MISSING - Check JWT_SECRET env var!');
 
         res.json({
-            _id: user.id || user._id,
+            _id: user.id,
             name: user.name,
             email: user.email,
             isAdmin: user.isAdmin,
             role: user.role,
             mobile: user.mobile,
             isVerified: user.isVerified,
+            loyaltyPoints: user.loyaltyPoints || 0,
+            createdAt: user.createdAt,
             addresses: user.addresses,
+            favorites: user.favorites || [],
+            cart: filteredCart,
             token: token,
         });
     } else {
