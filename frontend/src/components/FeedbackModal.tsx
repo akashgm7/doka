@@ -25,10 +25,8 @@ const FeedbackModal = ({ order, onClose, onSubmitted }: FeedbackModalProps) => {
         setLoading(true);
         setError('');
         try {
-            // Using port 5002 (Admin Backend) so the socket event reaches the Admin Dashboard
-            const adminUrl = (import.meta.env.VITE_ADMIN_API_URL || '').trim() || `${window.location.protocol}//${window.location.hostname}:5002`;
-            const res = await api.post(`${adminUrl}/api/orders/${order._id}/feedback`, { rating, comment });
-            onSubmitted(res.data);
+            const { data } = await api.post(`/api/orders/${order._id || order.id}/feedback`, { rating, comment });
+            onSubmitted(data);
             onClose();
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to submit feedback. Please try again.');
