@@ -230,18 +230,20 @@ const loginUser = asyncHandler(async (req, res) => {
         const cart = await Cart.findOne({ user: user.id });
         const filteredCart = cart ? filterExpiredCartItems(cart.items) : [];
 
+        console.log('[LOGIN] ✅ Success! Returning data for:', user.email);
+        const token = generateToken(user._id);
+        console.log('[LOGIN] 🔑 Generated Token:', token ? '✅ Exists' : '❌ MISSING');
+
         res.json({
-            _id: user.id,
+            _id: user.id || user._id,
             name: user.name,
             email: user.email,
             isAdmin: user.isAdmin,
             role: user.role,
-            loyaltyPoints: user.loyaltyPoints || 0,
-            createdAt: user.createdAt,
+            mobile: user.mobile,
+            isVerified: user.isVerified,
             addresses: user.addresses,
-            favorites: user.favorites || [],
-            cart: filteredCart,
-            token: generateToken(user.id),
+            token: token,
         });
     } else {
         res.status(400);

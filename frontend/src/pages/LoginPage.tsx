@@ -30,6 +30,7 @@ const LoginPage = () => {
         setError('');
         try {
             const { data } = await api.post('/api/users/login', { email, password });
+            console.log('[LOGIN] 📥 Response Data:', !!data, 'Token:', data?.token ? '✅ Found' : '❌ MISSING');
             setCredentials(data);
 
             const currentCart = useCartStore.getState().cartItems;
