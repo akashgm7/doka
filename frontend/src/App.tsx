@@ -74,8 +74,12 @@ const AppContent = () => {
           resetLocalCart();
         }
       } catch (error: any) {
-        console.error('App initialization failed:', error);
-        if (error.response?.status === 401) {
+        console.error('[App] ❌ Initialization error:', error.message);
+        
+        // Handle malformed or expired tokens by clearing state
+        const errorMessage = error.response?.data?.message || '';
+        if (errorMessage.includes('jwt') || errorMessage.includes('session') || error.response?.status === 401) {
+          console.warn('[App] 🧹 Clearing invalid session detected during initialization');
           logout();
           clearFavorites();
           resetLocalCart();

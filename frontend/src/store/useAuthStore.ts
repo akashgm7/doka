@@ -43,7 +43,12 @@ export const useAuthStore = create<AuthState>()(
             _hasHydrated: false,
             updateUser: (userData: Partial<User>) => set((state) => {
                 const newUserData = state.user ? { ...state.user, ...userData } : null;
-                const topToken = userData.token || state.token;
+                let topToken = userData.token || state.token;
+                
+                // Defensive check against malformed tokens
+                if (topToken === 'null' || topToken === 'undefined') {
+                    topToken = null;
+                }
                 
                 return {
                     user: newUserData,
@@ -51,8 +56,12 @@ export const useAuthStore = create<AuthState>()(
                 };
             }),
             setCredentials: (user: User) => set((state) => {
-                const newToken = user.token || state.token;
-                if (!newToken) return state; // Prevent setting null token
+                let newToken = user.token || state.token;
+                
+                // Defensive check
+                if (!newToken || newToken === 'null' || newToken === 'undefined') {
+                    return state; 
+                }
                 
                 return {
                     user: { ...user, token: newToken },

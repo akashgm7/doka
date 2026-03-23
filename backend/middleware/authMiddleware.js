@@ -14,6 +14,12 @@ const protect = asyncHandler(async (req, res, next) => {
             token = req.headers.authorization.split(' ')[1];
 
             // Verify token
+            if (token === 'null' || token === 'undefined') {
+                console.error('[AUTH] ❌ Malformed token string received:', token);
+                res.status(401);
+                throw new Error('Session expired or invalid. Please log in again.');
+            }
+
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             console.log('[AUTH] Decoded Token - User ID:', decoded.id);
 
@@ -31,7 +37,10 @@ const protect = asyncHandler(async (req, res, next) => {
         } catch (error) {
             console.error('[AUTH] ❌ Middleware Error:', error.message);
             res.status(401);
-            throw new Error(error.message || 'Not authorized');
+            let message = error.message;
+            if (message === 'jwt malformed') message = 'Invalid session format. Please log in again.';
+            if (message === 'jwt expired') message = 'Session expired. Please log in again.';
+            throw new Error(message || 'Not authorized');
         }
     } else {
         res.status(401);
