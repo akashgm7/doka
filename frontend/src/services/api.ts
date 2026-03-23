@@ -57,6 +57,17 @@ api.interceptors.request.use(
                 } catch (e) {}
             }
         }
+
+        // Final Verification
+        if (config.headers.Authorization) {
+            const h = config.headers.Authorization as string;
+            if (h.includes('undefined') || h.includes('null')) {
+                console.error(`[API] 🛑 CRITICAL: Sending MALFORMED header to ${config.url}:`, h);
+            } else if (import.meta.env.DEV || config.url?.includes('cart')) {
+                console.log(`[API] 📤 Sending Auth Header to ${config.url}:`, h.substring(0, 20) + '...');
+            }
+        }
+
         return config;
     },
     (error) => Promise.reject(error)
