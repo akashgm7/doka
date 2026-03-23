@@ -29,6 +29,7 @@ interface AuthState {
     loginTime: string | null;
     _hasHydrated: boolean;
     setCredentials: (user: User) => void;
+    updateUser: (userData: Partial<User>) => void;
     logout: () => void;
     setHasHydrated: (state: boolean) => void;
 }
@@ -40,36 +41,27 @@ export const useAuthStore = create<AuthState>()(
             token: null,
             loginTime: null,
             _hasHydrated: false,
-            setCredentials: (user) => set((state) => {
-                // Determine the best token to use
-                // 1. New token from user object
-                // 2. Existing token in state
-                // 3. Last desperate check in localStorage
-                let newToken = user.token || state.token;
+            updateUser: (userData: Partial<User>) => set((state) => {
+                const newUserData = state.user ? { ...state.user, ...userData } : null;
+                const topToken = userData.token || state.token;
                 
-                if (!newToken) {
-                    try {
-                        const saved = JSON.parse(localStorage.getItem('auth-storage') || '{}');
-                        newToken = saved.state?.token;
-                    } catch (e) {}
-                }
-
-                if (import.meta.env.DEV) {
-                    console.log('[AuthStore] Syncing credentials:', { 
-                        user: user.email, 
-                        tokenFound: !!newToken 
-                    });
-                }
-
                 return {
-                    user,
+                    user: newUserData,
+                    token: topToken
+                };
+            }),
+            setCredentials: (user: User) => set((state) => {
+                const newToken = user.token || state.token;
+                if (!newToken) return state; // Prevent setting null token
+                
+                return {
+                    user: { ...user, token: newToken },
                     token: newToken,
                     loginTime: state.loginTime || new Date().toISOString()
                 };
             }),
             logout: () => {
-                console.warn('[AuthStore] Session terminated.');
-                localStorage.removeItem('auth-storage'); // Force clear
+                localStorage.removeItem('auth-storage');
                 set({ user: null, token: null, loginTime: null });
             },
             setHasHydrated: (state) => set({ _hasHydrated: state }),

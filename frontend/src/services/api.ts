@@ -16,7 +16,7 @@ const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         const state = useAuthStore.getState();
-        const token = state.token;
+        const token = state.token || state.user?.token;
 
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -32,7 +32,7 @@ api.interceptors.request.use(
             if (hasRawStorage && !token) {
                 try {
                     const parsed = JSON.parse(localStorage.getItem('auth-storage') || '{}');
-                    const recoveredToken = parsed.state?.token;
+                    const recoveredToken = parsed.state?.token || parsed.state?.user?.token;
                     if (recoveredToken) {
                         console.log('[API] 💡 Recovered token from storage for request');
                         config.headers.Authorization = `Bearer ${recoveredToken}`;

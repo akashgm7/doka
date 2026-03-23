@@ -8,7 +8,7 @@ import { User, MapPin, Phone, ArrowRight, SkipForward, Check, Loader, Navigation
 
 const OnboardingPage = () => {
     const navigate = useNavigate();
-    const { user, setCredentials } = useAuthStore();
+    const { user, updateUser } = useAuthStore();
     const [step, setStep] = useState(1);
     const [mobile, setMobile] = useState('');
     const [addressLine, setAddressLine] = useState('');
@@ -102,9 +102,7 @@ const OnboardingPage = () => {
             setIsLoading(true);
             try {
                 const profileRes = await api.put('/api/users/profile', { mobile });
-                const updatedData = { ...profileRes.data };
-                if (!updatedData.token && user?.token) updatedData.token = user.token;
-                setCredentials(updatedData);
+                updateUser(profileRes.data);
             } catch (err: any) {
                 setError(err.response?.data?.message || 'Failed to save mobile');
                 setIsLoading(false);
@@ -141,9 +139,7 @@ const OnboardingPage = () => {
                 coordinates: coordinates || undefined,
             };
             const addressRes = await api.post('/api/users/address', addressData);
-            const updatedData = { ...addressRes.data };
-            if (!updatedData.token && user?.token) updatedData.token = user.token;
-            setCredentials(updatedData);
+            updateUser(addressRes.data);
             navigate(next);
         } catch (err: any) {
             console.error(err);

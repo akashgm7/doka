@@ -50,10 +50,16 @@ const AppContent = () => {
       if (!_hasHydrated) return;
 
       const state = useAuthStore.getState();
-      const token = state.token;
+      const token = state.token || state.user?.token;
       
       try {
         if (token) {
+          // If top-level token was missing but found in user object, synchronize it
+          if (!state.token && state.user?.token) {
+            console.log('[App] 🔧 Synchronizing top-level token from user object');
+            useAuthStore.setState({ token: state.user.token });
+          }
+
           const { data } = await api.get('/api/users/me');
           setCredentials({ ...data, token });
           
@@ -62,7 +68,7 @@ const AppContent = () => {
           }
           await fetchFavorites();
         } else if (state.user) {
-          console.warn('Inconsistent auth state: user exists but token is null. Logging out.');
+          console.warn('Inconsistent auth state: user exists but no token found. Logging out.');
           logout();
           clearFavorites();
           resetLocalCart();

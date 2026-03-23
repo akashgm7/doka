@@ -19,7 +19,7 @@ const CartPage = () => {
 
     const totalPrice = cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);
 
-    const { user, setCredentials } = useAuthStore();
+    const { user, updateUser } = useAuthStore();
     const navigate = useNavigate();
     const { orderMode, setOrderMode } = useCartStore();
     const [loading, setLoading] = useState(false);
@@ -76,7 +76,7 @@ const CartPage = () => {
 
             const response = await api.post('/api/orders', orderData);
             if (response.data.newLoyaltyPoints !== undefined && user) {
-                setCredentials({ ...user, loyaltyPoints: response.data.newLoyaltyPoints });
+                updateUser({ loyaltyPoints: response.data.newLoyaltyPoints });
             }
             clearCart();
             setShowSuccess(true);

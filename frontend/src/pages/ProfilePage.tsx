@@ -15,7 +15,7 @@ import { useCartStore } from '../store/useCartStore';
 import CakeCard from '../components/CakeCard';
 
 const ProfilePage = () => {
-    const { user, setCredentials, logout } = useAuthStore();
+    const { user, updateUser, logout } = useAuthStore();
     const { favorites, clearFavorites } = useFavoritesStore();
     const { resetLocalCart } = useCartStore();
     const [searchParams] = useSearchParams();
@@ -169,9 +169,7 @@ const ProfilePage = () => {
             }
 
             const response = await api.post('/api/users/address', newAddress);
-            const updatedUserData = { ...response.data };
-            if (!updatedUserData.token && user?.token) updatedUserData.token = user.token;
-            setCredentials(updatedUserData);
+            updateUser(response.data);
             setIsAddingAddress(false);
             setNewAddress({ label: 'Home', addressLine: '', city: '', zipCode: '', coordinates: null });
             setMessage('Location saved successfully'); setMessageType('success');
@@ -188,9 +186,7 @@ const ProfilePage = () => {
         setIsLoading(true);
         try {
             const response = await api.delete(`/api/users/address/${addressToDelete}`);
-            const updatedUserData = { ...response.data };
-            if (!updatedUserData.token && user?.token) updatedUserData.token = user.token;
-            setCredentials(updatedUserData);
+            updateUser(response.data);
             setMessage('Location removed'); setMessageType('success');
             setTimeout(() => setMessage(''), 3000);
         } catch (error: any) {
@@ -211,9 +207,7 @@ const ProfilePage = () => {
         setIsLoading(true);
         try {
             const response = await api.put('/api/users/profile', { name, email, mobile });
-            const updatedUserData = { ...response.data };
-            if (!updatedUserData.token && user?.token) updatedUserData.token = user.token;
-            setCredentials(updatedUserData);
+            updateUser(response.data);
             setIsEditingProfile(false);
             setMessage('Profile updated'); setMessageType('success');
             setTimeout(() => setMessage(''), 3000);
@@ -234,9 +228,7 @@ const ProfilePage = () => {
         setIsLoading(true);
         try {
             const { data } = await api.put('/api/users/profile', { oldPassword: currentPassword, newPassword: newPassword });
-            const updatedUserData = { ...data };
-            if (!updatedUserData.token && user?.token) updatedUserData.token = user.token;
-            setCredentials(updatedUserData);
+            updateUser(data);
             setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
             setMessage('Security credentials updated'); setMessageType('success');
             setTimeout(() => setMessage(''), 3000);
