@@ -248,7 +248,7 @@ const updateOrderToDelivered = asyncHandler(async (req, res) => {
     if (order) {
         order.isDelivered = true;
         order.deliveredAt = Date.now();
-        order.status = 'Delivered';
+        order.status = 'DELIVERED';
 
         const updatedOrder = await order.save();
 
@@ -258,9 +258,9 @@ const updateOrderToDelivered = asyncHandler(async (req, res) => {
             io.emit('orderStatusUpdated', {
                 orderId: order._id,
                 orderNumber: order.orderId,
-                status: 'Delivered'
+                status: 'DELIVERED'
             });
-            console.log(`[SOCKET] Emitted orderStatusUpdated for ${order._id}: Delivered`);
+            console.log(`[SOCKET] Emitted orderStatusUpdated for ${order._id}: DELIVERED`);
         }
 
         res.json(updatedOrder);
@@ -294,7 +294,8 @@ const submitFeedback = asyncHandler(async (req, res) => {
         throw new Error('Not authorized to submit feedback for this order');
     }
 
-    if (order.status !== 'Delivered') {
+    const currentStatus = (order.status || '').toUpperCase();
+    if (currentStatus !== 'DELIVERED' && currentStatus !== 'COMPLETED' && !order.isDelivered) {
         res.status(400);
         throw new Error('Feedback can only be submitted for delivered orders');
     }
